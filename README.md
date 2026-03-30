@@ -134,6 +134,12 @@ Usa outbox cuando el side effect deba quedar garantizado junto con el commit. Us
 - `AuditLog`: archivado, no purge agresivo por defecto
 - `Attachment` temporal: purge controlado
 
+### Supabase y RLS
+
+- Esta base usa acceso server-side por Prisma, no lectura directa desde Supabase Data API.
+- Por eso se incluye una migración SQL de hardening para habilitar RLS en todas las tablas de negocio del esquema `public`.
+- No se crean policies públicas por defecto.
+
 ## Notas de implementación
 
 - Todos los montos monetarios usan `Decimal @db.Decimal(18, 2)`.
