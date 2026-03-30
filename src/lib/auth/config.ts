@@ -9,7 +9,7 @@ import {
   revokePersistedSession,
   touchPersistedSession,
 } from "@/lib/auth/persisted-session";
-import { getEnv } from "@/lib/env/server";
+import { getAuthEnv } from "@/lib/env/server";
 import { logger } from "@/lib/observability/logger";
 import { prisma } from "@/lib/prisma/client";
 import { loginWithCredentials } from "@/modules/auth/application/use-cases/login-with-credentials";
@@ -19,7 +19,7 @@ const SESSION_MAX_AGE = 60 * 60 * 24 * 7;
 const SESSION_UPDATE_AGE = 60 * 60 * 6;
 
 function createAuthConfig(): NextAuthConfig {
-  const env = getEnv();
+  const env = getAuthEnv();
 
   return {
     adapter: PrismaAdapter(prisma),

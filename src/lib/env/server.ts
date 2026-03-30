@@ -1,30 +1,77 @@
 import { z } from "zod";
 
+const optionalString = z.preprocess((value) => {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  return trimmed === "" ? undefined : trimmed;
+}, z.string().optional());
+
+const optionalUrl = z.preprocess((value) => {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  return trimmed === "" ? undefined : trimmed;
+}, z.string().url().optional());
+
 const optionalSecret = z.preprocess((value) => {
   if (typeof value !== "string") {
     return value;
   }
 
-  return value.trim() === "" ? undefined : value;
+  const trimmed = value.trim();
+  return trimmed === "" ? undefined : trimmed;
 }, z.string().min(8).optional());
 
-const envSchema = z.object({
-  DATABASE_URL: z.string().min(1),
-  AUTH_SECRET: z.string().min(16),
-  NEXTAUTH_URL: z.string().url(),
-  APP_URL: z.string().url(),
-  INTERNAL_CRON_TOKEN: z.string().min(8),
+const optionalPort = z.preprocess((value) => {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  return trimmed === "" ? undefined : trimmed;
+}, z.coerce.number().int().positive().optional());
+
+const rawEnvSchema = z.object({
+  DATABASE_URL: optionalString,
+  AUTH_SECRET: optionalString,
+  NEXTAUTH_URL: optionalUrl,
+  APP_URL: optionalUrl,
+  INTERNAL_CRON_TOKEN: optionalSecret,
   CRON_SECRET: optionalSecret,
+  MAIL_FROM: optionalString,
+  SMTP_HOST: optionalString,
+  SMTP_PORT: optionalPort,
+  SMTP_USER: optionalString,
+  SMTP_PASSWORD: optionalString,
+});
+
+const authEnvSchema = z.object({
+  AUTH_SECRET: z.string().min(16),
+  NEXTAUTH_URL: optionalUrl,
+  APP_URL: optionalUrl,
+});
+
+const databaseEnvSchema = z.object({
+  DATABASE_URL: z.string().min(1),
+});
+
+const cronEnvSchema = z.object({
+  INTERNAL_CRON_TOKEN: optionalSecret,
+  CRON_SECRET: optionalSecret,
+});
+
+const mailEnvSchema = z.object({
   MAIL_FROM: z.string().email(),
   SMTP_HOST: z.string().min(1),
   SMTP_PORT: z.coerce.number().int().positive(),
-  SMTP_USER: z.string().optional(),
-  SMTP_PASSWORD: z.string().optional(),
+  SMTP_USER: optionalString,
+  SMTP_PASSWORD: optionalString,
 });
-
-export type ServerEnv = z.infer<typeof envSchema>;
-
-let cachedEnv: ServerEnv | null = null;
 
 function readEnvSource() {
   return {
@@ -42,16 +89,48 @@ function readEnvSource() {
   };
 }
 
-export function getEnv() {
-  if (!cachedEnv) {
-    cachedEnv = envSchema.parse(readEnvSource());
+let cachedRawEnv: z.infer<typeof rawEnvSchema> | null = null;
+let cachedAuthEnv: z.infer<typeof authEnvSchema> | null = null;
+let cachedDatabaseEnv: z.infer<typeof databaseEnvSchema> | null = null;
+let cachedCronEnv: z.infer<typeof cronEnvSchema> | null = null;
+let cachedMailEnv: z.infer<typeof mailEnvSchema> | null = null;
+
+export function getRawEnv() {
+  if (!cachedRawEnv) {
+    cachedRawEnv = rawEnvSchema.parse(readEnvSource());
   }
 
-  return cachedEnv;
+  return cachedRawEnv;
 }
 
-export const env = new Proxy({} as ServerEnv, {
-  get(_target, prop) {
-    return getEnv()[prop as keyof ServerEnv];
-  },
-});
+export function getAuthEnv() {
+  if (!cachedAuthEnv) {
+    cachedAuthEnv = authEnvSchema.parse(getRawEnv());
+  }
+
+  return cachedAuthEnv;
+}
+
+export function getDatabaseEnv() {
+  if (!cachedDatabaseEnv) {
+    cachedDatabaseEnv = databaseEnvSchema.parse(getRawEnv());
+  }
+
+  return cachedDatabaseEnv;
+}
+
+export function getCronEnv() {
+  if (!cachedCronEnv) {
+    cachedCronEnv = cronEnvSchema.parse(getRawEnv());
+  }
+
+  return cachedCronEnv;
+}
+
+export function getMailEnv() {
+  if (!cachedMailEnv) {
+    cachedMailEnv = mailEnvSchema.parse(getRawEnv());
+  }
+
+  return cachedMailEnv;
+}

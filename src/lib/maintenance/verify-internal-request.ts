@@ -1,7 +1,7 @@
-import { getEnv } from "@/lib/env/server";
+import { getCronEnv } from "@/lib/env/server";
 
 export function isAuthorizedInternalRequest(request: Request) {
-  const env = getEnv();
+  const env = getCronEnv();
   const internalToken = request.headers.get("x-internal-token");
 
   if (internalToken && internalToken === env.INTERNAL_CRON_TOKEN) {

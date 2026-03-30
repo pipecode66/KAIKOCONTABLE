@@ -1,11 +1,15 @@
 import { PrismaClient } from "@prisma/client";
 
+import { getDatabaseEnv } from "@/lib/env/server";
+
 declare global {
   var prisma: PrismaClient | undefined;
   var prismaProxy: PrismaClient | undefined;
 }
 
 function createPrismaClient() {
+  getDatabaseEnv();
+
   return new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
   });
