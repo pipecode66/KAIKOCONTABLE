@@ -1,0 +1,12 @@
+:root {
+  --kaiko-ivory: #f5f8f3;
+  --kaiko-surface: #ffffff;
+  --kaiko-surface-muted: #eef4ef;
+  --kaiko-foreground: #0f1720;
+  --kaiko-muted: #5f6d68;
+  --kaiko-green: #0f875f;
+  --kaiko-green-deep: #071510;
+  --kaiko-green-soft: #dff6ec;
+  --kaiko-border: rgba(15, 23, 32, 0.08);
+  --kaiko-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+}

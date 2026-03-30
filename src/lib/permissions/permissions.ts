@@ -1,0 +1,35 @@
+export const permissionCatalog = [
+  { module: "organizations", action: "read", code: "organizations.read" },
+  { module: "organizations", action: "manage", code: "organizations.manage" },
+  { module: "admin", action: "manage", code: "admin.manage" },
+  { module: "catalogs", action: "manage", code: "catalogs.manage" },
+  { module: "sales", action: "manage", code: "sales.manage" },
+  { module: "purchases", action: "manage", code: "purchases.manage" },
+  { module: "treasury", action: "manage", code: "treasury.manage" },
+  { module: "accounting", action: "manage", code: "accounting.manage" },
+  { module: "accounting", action: "manual_journal", code: "accounting.manual_journal.post" },
+  { module: "accounting", action: "opening_balance", code: "accounting.opening_balance.post" },
+  { module: "accounting", action: "close_period", code: "accounting.period.close" },
+  { module: "accounting", action: "reopen_period", code: "accounting.period.reopen" },
+  { module: "accounting", action: "lock_period", code: "accounting.period.lock" },
+  { module: "reports", action: "read", code: "reports.read" },
+  { module: "audit", action: "read", code: "audit.read" },
+] as const;
+
+export const rolePermissionMatrix: Record<string, string[]> = {
+  super_admin: permissionCatalog.map((permission) => permission.code),
+  admin: permissionCatalog.map((permission) => permission.code),
+  accountant: [
+    "catalogs.manage",
+    "sales.manage",
+    "purchases.manage",
+    "treasury.manage",
+    "accounting.manage",
+    "accounting.manual_journal.post",
+    "accounting.opening_balance.post",
+    "reports.read",
+    "audit.read",
+  ],
+  assistant: ["catalogs.manage", "sales.manage", "purchases.manage", "treasury.manage", "reports.read"],
+  viewer: ["reports.read", "audit.read", "organizations.read"],
+};
