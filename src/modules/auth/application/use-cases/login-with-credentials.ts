@@ -6,13 +6,13 @@ export async function loginWithCredentials(email: string, password: string) {
   const user = await findUserByEmail(email);
 
   if (!user?.credential || !user.isActive) {
-    throw new AuthorizationError("Credenciales inválidas.");
+    throw new AuthorizationError("Credenciales invalidas.");
   }
 
   const isValid = await verifyPassword(password, user.credential.passwordHash);
 
   if (!isValid) {
-    throw new AuthorizationError("Credenciales inválidas.");
+    throw new AuthorizationError("Credenciales invalidas.");
   }
 
   return user;

@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 
 import { AppShell } from "@/components/layout/app-shell";
 import { auth } from "@/lib/auth";
+import { getAccessibleOrganizations } from "@/modules/organizations/application/queries/get-accessible-organizations";
+import { recordOrganizationAccess } from "@/modules/organizations/application/use-cases/record-organization-access";
 import { resolveActiveOrganization } from "@/modules/organizations/application/use-cases/resolve-active-organization";
 
 export const dynamic = "force-dynamic";
@@ -30,11 +32,23 @@ export default async function OrganizationLayout({
     redirect("/");
   }
 
+  await recordOrganizationAccess({
+    membershipId: membership.id,
+  });
+
+  const organizations = await getAccessibleOrganizations(session.user.id);
+
   return (
     <AppShell
       organizationName={membership.organization.name}
       organizationSlug={membership.organization.slug}
       userName={session.user.name}
+      userEmail={session.user.email}
+      organizations={organizations.map((organization) => ({
+        id: organization.id,
+        slug: organization.slug,
+        name: organization.name,
+      }))}
     >
       {children}
     </AppShell>

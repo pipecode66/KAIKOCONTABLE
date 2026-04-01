@@ -1,6 +1,8 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma/client";
+
+type OutboxDbClient = Prisma.TransactionClient | PrismaClient;
 
 type CreateOutboxInput = {
   organizationId?: string;
@@ -12,8 +14,11 @@ type CreateOutboxInput = {
   dedupeKey: string;
 };
 
-export async function addOutboxMessage(input: CreateOutboxInput) {
-  return prisma.outboxMessage.create({
+export async function addOutboxMessage(
+  input: CreateOutboxInput,
+  db: OutboxDbClient = prisma,
+) {
+  return db.outboxMessage.create({
     data: {
       organizationId: input.organizationId ?? null,
       eventType: input.eventType,

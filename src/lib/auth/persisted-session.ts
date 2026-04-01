@@ -25,10 +25,12 @@ export async function touchPersistedSession(sessionToken: string, maxAgeSeconds:
     select: {
       id: true,
       lastSeenAt: true,
+      revokedAt: true,
+      expires: true,
     },
   });
 
-  if (!current) {
+  if (!current || current.revokedAt || current.expires <= new Date()) {
     return null;
   }
 
@@ -49,6 +51,18 @@ export async function touchPersistedSession(sessionToken: string, maxAgeSeconds:
 export async function revokePersistedSession(sessionToken: string) {
   return prisma.session.updateMany({
     where: { sessionToken },
+    data: {
+      revokedAt: new Date(),
+    },
+  });
+}
+
+export async function revokeAllPersistedSessionsForUser(userId: string) {
+  return prisma.session.updateMany({
+    where: {
+      userId,
+      revokedAt: null,
+    },
     data: {
       revokedAt: new Date(),
     },

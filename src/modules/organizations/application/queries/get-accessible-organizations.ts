@@ -16,9 +16,17 @@ export async function getAccessibleOrganizations(userId: string) {
       },
       role: true,
     },
-    orderBy: {
-      createdAt: "asc",
-    },
+    orderBy: [
+      {
+        lastAccessedAt: {
+          sort: "desc",
+          nulls: "last",
+        },
+      },
+      {
+        createdAt: "asc",
+      },
+    ],
   });
 
   return memberships.map((membership) => membership.organization);

@@ -1,5 +1,5 @@
-import { DashboardPage } from "@/modules/reports/ui/pages/dashboard-page";
+import { ReportsOverviewPage } from "@/modules/reports/ui/pages/reports-overview-page";
 
 export default function ReportsRoutePage() {
-  return <DashboardPage />;
+  return <ReportsOverviewPage />;
 }

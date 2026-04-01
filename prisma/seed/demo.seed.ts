@@ -25,6 +25,20 @@ export async function runDemoSeed() {
     },
   });
 
+  const accountsPayableAccount = await prisma.ledgerAccount.findFirstOrThrow({
+    where: {
+      organizationId: organization.id,
+      code: "2205",
+    },
+  });
+
+  const inputTaxAccount = await prisma.ledgerAccount.findFirstOrThrow({
+    where: {
+      organizationId: organization.id,
+      code: "1355",
+    },
+  });
+
   const iva19 = await prisma.tax.findFirstOrThrow({
     where: {
       organizationId: organization.id,
@@ -190,6 +204,86 @@ export async function runDemoSeed() {
     },
   });
 
+  const purchaseBill = await prisma.purchaseBill.upsert({
+    where: {
+      organizationId_internalNumber: {
+        organizationId: organization.id,
+        internalNumber: "PB-DEMO-0001",
+      },
+    },
+    update: {},
+    create: {
+      organizationId: organization.id,
+      supplierId: supplier.id,
+      currencyId: organization.baseCurrencyId,
+      internalNumber: "PB-DEMO-0001",
+      documentNumber: "FC-000001",
+      issueDate: new Date("2026-03-17T00:00:00.000Z"),
+      dueDate: new Date("2026-04-17T00:00:00.000Z"),
+      status: "POSTED",
+      subtotal: "2400000.00",
+      taxTotal: "456000.00",
+      withholdingTotal: "0.00",
+      total: "2856000.00",
+      balanceDue: "2856000.00",
+      postedAt: new Date("2026-03-17T10:00:00.000Z"),
+      lines: {
+        create: [
+          {
+            description: "Infraestructura cloud mensual",
+            accountId: expenseAccount.id,
+            taxId: iva19.id,
+            quantity: "1.0000",
+            unitPrice: "2400000.00",
+            lineSubtotal: "2400000.00",
+            taxableBase: "2400000.00",
+            taxAmount: "456000.00",
+            lineTotal: "2856000.00",
+          },
+        ],
+      },
+    },
+  });
+
+  await prisma.purchaseBill.upsert({
+    where: {
+      organizationId_internalNumber: {
+        organizationId: organization.id,
+        internalNumber: "PB-DEMO-0002",
+      },
+    },
+    update: {},
+    create: {
+      organizationId: organization.id,
+      supplierId: supplier.id,
+      currencyId: organization.baseCurrencyId,
+      internalNumber: "PB-DEMO-0002",
+      issueDate: new Date("2026-03-28T00:00:00.000Z"),
+      dueDate: new Date("2026-04-28T00:00:00.000Z"),
+      status: "DRAFT",
+      subtotal: "1800000.00",
+      taxTotal: "342000.00",
+      withholdingTotal: "0.00",
+      total: "2142000.00",
+      balanceDue: "2142000.00",
+      lines: {
+        create: [
+          {
+            description: "Suscripcion de plataforma operativa",
+            accountId: expenseAccount.id,
+            taxId: iva19.id,
+            quantity: "1.0000",
+            unitPrice: "1800000.00",
+            lineSubtotal: "1800000.00",
+            taxableBase: "1800000.00",
+            taxAmount: "342000.00",
+            lineTotal: "2142000.00",
+          },
+        ],
+      },
+    },
+  });
+
   await prisma.payment.upsert({
     where: {
       id: `${organization.id}-payment-demo-1`,
@@ -212,6 +306,254 @@ export async function runDemoSeed() {
           {
             salesInvoiceId: salesInvoice.id,
             amount: "10000000.00",
+          },
+        ],
+      },
+    },
+  });
+
+  const marchPeriod = await prisma.accountingPeriod.findFirstOrThrow({
+    where: {
+      organizationId: organization.id,
+      fiscalYear: 2026,
+      periodNumber: 3,
+    },
+  });
+
+  const bankLedgerAccount = await prisma.ledgerAccount.findFirstOrThrow({
+    where: {
+      organizationId: organization.id,
+      code: "1110",
+    },
+  });
+
+  await prisma.documentSequence.updateMany({
+    where: {
+      organizationId: organization.id,
+      documentType: "accounting_voucher",
+      currentNumber: {
+        lt: 1,
+      },
+    },
+    data: {
+      currentNumber: 1,
+    },
+  });
+
+  await prisma.documentSequence.updateMany({
+    where: {
+      organizationId: organization.id,
+      documentType: "purchase_bill",
+      currentNumber: {
+        lt: 1,
+      },
+    },
+    data: {
+      currentNumber: 1,
+    },
+  });
+
+  await prisma.documentSequence.updateMany({
+    where: {
+      organizationId: organization.id,
+      documentType: "journal_entry",
+      currentNumber: {
+        lt: 2,
+      },
+    },
+    data: {
+      currentNumber: 2,
+    },
+  });
+
+  const postedVoucher = await prisma.accountingVoucher.upsert({
+    where: {
+      id: `${organization.id}-voucher-demo-1`,
+    },
+    update: {},
+    create: {
+      id: `${organization.id}-voucher-demo-1`,
+      organizationId: organization.id,
+      accountingPeriodId: marchPeriod.id,
+      currencyId: organization.baseCurrencyId,
+      voucherType: "MANUAL_ADJUSTMENT",
+      voucherNumber: "AV-000001",
+      description: "Reclasificacion de gasto bancario pendiente",
+      entryDate: new Date("2026-03-21T12:00:00.000Z"),
+      status: "POSTED",
+      debitTotal: "500000.00",
+      creditTotal: "500000.00",
+      postedAt: new Date("2026-03-21T15:00:00.000Z"),
+      lines: {
+        create: [
+          {
+            ledgerAccountId: expenseAccount.id,
+            description: "Ajuste gasto soporte bancario",
+            debit: "500000.00",
+            credit: "0.00",
+          },
+          {
+            ledgerAccountId: bankLedgerAccount.id,
+            description: "Salida banco por reclasificacion",
+            debit: "0.00",
+            credit: "500000.00",
+          },
+        ],
+      },
+    },
+  });
+
+  const journalEntry = await prisma.journalEntry.upsert({
+    where: {
+      organizationId_sourceType_sourceId: {
+        organizationId: organization.id,
+        sourceType: "ACCOUNTING_VOUCHER",
+        sourceId: postedVoucher.id,
+      },
+    },
+    update: {},
+    create: {
+      organizationId: organization.id,
+      accountingPeriodId: marchPeriod.id,
+      currencyId: organization.baseCurrencyId,
+      entryNumber: "JE-000001",
+      entryDate: new Date("2026-03-21T12:00:00.000Z"),
+      sourceType: "ACCOUNTING_VOUCHER",
+      sourceId: postedVoucher.id,
+      entryType: "MANUAL_ADJUSTMENT",
+      description: postedVoucher.description,
+      totalDebit: "500000.00",
+      totalCredit: "500000.00",
+      postedAt: new Date("2026-03-21T15:00:00.000Z"),
+      lines: {
+        create: [
+          {
+            ledgerAccountId: expenseAccount.id,
+            description: "Ajuste gasto soporte bancario",
+            debit: "500000.00",
+            credit: "0.00",
+          },
+          {
+            ledgerAccountId: bankLedgerAccount.id,
+            description: "Salida banco por reclasificacion",
+            debit: "0.00",
+            credit: "500000.00",
+          },
+        ],
+      },
+    },
+  });
+
+  const purchaseJournalEntry = await prisma.journalEntry.upsert({
+    where: {
+      organizationId_sourceType_sourceId: {
+        organizationId: organization.id,
+        sourceType: "PURCHASE_BILL",
+        sourceId: purchaseBill.id,
+      },
+    },
+    update: {},
+    create: {
+      organizationId: organization.id,
+      accountingPeriodId: marchPeriod.id,
+      currencyId: organization.baseCurrencyId,
+      entryNumber: "JE-000002",
+      entryDate: new Date("2026-03-17T12:00:00.000Z"),
+      sourceType: "PURCHASE_BILL",
+      sourceId: purchaseBill.id,
+      entryType: "SYSTEM",
+      description: "Factura de compra FC-000001",
+      totalDebit: "2856000.00",
+      totalCredit: "2856000.00",
+      postedAt: new Date("2026-03-17T10:00:00.000Z"),
+      lines: {
+        create: [
+          {
+            ledgerAccountId: expenseAccount.id,
+            thirdPartyId: supplier.id,
+            description: "Infraestructura cloud mensual",
+            debit: "2400000.00",
+            credit: "0.00",
+          },
+          {
+            ledgerAccountId: inputTaxAccount.id,
+            thirdPartyId: supplier.id,
+            description: "IVA descontable FC-000001",
+            debit: "456000.00",
+            credit: "0.00",
+          },
+          {
+            ledgerAccountId: accountsPayableAccount.id,
+            thirdPartyId: supplier.id,
+            description: "CxP FC-000001",
+            debit: "0.00",
+            credit: "2856000.00",
+          },
+        ],
+      },
+    },
+  });
+
+  await prisma.documentLink.upsert({
+    where: {
+      id: `${organization.id}-document-link-voucher-demo-1`,
+    },
+    update: {},
+    create: {
+      id: `${organization.id}-document-link-voucher-demo-1`,
+      organizationId: organization.id,
+      sourceModule: "accounting",
+      sourceType: "ACCOUNTING_VOUCHER",
+      sourceId: postedVoucher.id,
+      accountingVoucherId: postedVoucher.id,
+      journalEntryId: journalEntry.id,
+    },
+  });
+
+  await prisma.documentLink.upsert({
+    where: {
+      id: `${organization.id}-document-link-purchase-bill-demo-1`,
+    },
+    update: {},
+    create: {
+      id: `${organization.id}-document-link-purchase-bill-demo-1`,
+      organizationId: organization.id,
+      sourceModule: "purchases",
+      sourceType: "PURCHASE_BILL",
+      sourceId: purchaseBill.id,
+      journalEntryId: purchaseJournalEntry.id,
+    },
+  });
+
+  await prisma.accountingVoucher.upsert({
+    where: {
+      id: `${organization.id}-voucher-demo-draft-1`,
+    },
+    update: {},
+    create: {
+      id: `${organization.id}-voucher-demo-draft-1`,
+      organizationId: organization.id,
+      accountingPeriodId: marchPeriod.id,
+      currencyId: organization.baseCurrencyId,
+      voucherType: "OPENING_BALANCE",
+      description: "Saldo inicial banco de pruebas",
+      entryDate: new Date("2026-03-25T12:00:00.000Z"),
+      status: "DRAFT",
+      debitTotal: "2500000.00",
+      creditTotal: "2500000.00",
+      lines: {
+        create: [
+          {
+            ledgerAccountId: bankLedgerAccount.id,
+            description: "Saldo inicial banco",
+            debit: "2500000.00",
+            credit: "0.00",
+          },
+          {
+            ledgerAccountId: salesAccount.id,
+            description: "Contrapartida temporal",
+            debit: "0.00",
+            credit: "2500000.00",
           },
         ],
       },

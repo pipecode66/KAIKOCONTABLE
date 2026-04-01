@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Manrope, Sora } from "next/font/google";
+import { IBM_Plex_Mono, Manrope, Sora } from "next/font/google";
 
 import "./globals.css";
 
@@ -13,9 +13,15 @@ const sora = Sora({
   subsets: ["latin"],
 });
 
+const mono = IBM_Plex_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+});
+
 export const metadata: Metadata = {
   title: "KAIKO Contable",
-  description: "SaaS contable multiempresa con NIIF, tesorería y trazabilidad total.",
+  description: "SaaS contable multiempresa con NIIF, tesoreria y trazabilidad total.",
 };
 
 export default function RootLayout({
@@ -25,7 +31,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className={`${manrope.variable} ${sora.variable}`}>{children}</body>
+      <body className={`${manrope.variable} ${sora.variable} ${mono.variable}`}>
+        {children}
+      </body>
     </html>
   );
 }

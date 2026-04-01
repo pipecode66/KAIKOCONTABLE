@@ -6,6 +6,7 @@ export async function resolveActiveOrganization(userId: string, slug?: string) {
     where: {
       userId,
       isActive: true,
+      status: "ACTIVE",
       organization: slug ? { slug } : undefined,
     },
     include: {
@@ -25,13 +26,21 @@ export async function resolveActiveOrganization(userId: string, slug?: string) {
         },
       },
     },
-    orderBy: {
-      createdAt: "asc",
-    },
+    orderBy: [
+      {
+        lastAccessedAt: {
+          sort: "desc",
+          nulls: "last",
+        },
+      },
+      {
+        createdAt: "asc",
+      },
+    ],
   });
 
   if (!membership) {
-    throw new NotFoundError("No encontramos una organización activa para este usuario.");
+    throw new NotFoundError("No encontramos una organizacion activa para este usuario.");
   }
 
   return membership;

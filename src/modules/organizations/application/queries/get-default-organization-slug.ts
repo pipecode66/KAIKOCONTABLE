@@ -10,9 +10,17 @@ export async function getDefaultOrganizationSlug(userId: string) {
     include: {
       organization: true,
     },
-    orderBy: {
-      createdAt: "asc",
-    },
+    orderBy: [
+      {
+        lastAccessedAt: {
+          sort: "desc",
+          nulls: "last",
+        },
+      },
+      {
+        createdAt: "asc",
+      },
+    ],
   });
 
   return membership?.organization.slug ?? null;

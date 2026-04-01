@@ -1,5 +1,11 @@
 import { SalesOverviewPage } from "@/modules/sales/ui/pages/sales-overview-page";
 
-export default function SalesRoutePage() {
-  return <SalesOverviewPage />;
+export default async function SalesRoutePage({
+  params,
+}: {
+  params: Promise<{ organizationSlug: string }>;
+}) {
+  const { organizationSlug } = await params;
+
+  return <SalesOverviewPage organizationSlug={organizationSlug} />;
 }

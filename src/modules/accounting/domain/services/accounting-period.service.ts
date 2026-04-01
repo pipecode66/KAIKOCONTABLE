@@ -1,22 +1,31 @@
+import type { AccountingPeriod, AccountingPeriodStatus } from "@prisma/client";
+
 import { DomainError } from "@/lib/errors";
-import { prisma } from "@/lib/prisma/client";
 
-export async function assertOpenAccountingPeriod(organizationId: string, date: Date) {
-  const period = await prisma.accountingPeriod.findFirst({
-    where: {
-      organizationId,
-      periodStart: { lte: date },
-      periodEnd: { gte: date },
-    },
-  });
-
-  if (!period) {
-    throw new DomainError("No existe un período contable configurado para esa fecha.", "MISSING_PERIOD");
-  }
-
+export function assertPeriodIsOpen(period: Pick<AccountingPeriod, "status">) {
   if (period.status !== "OPEN") {
-    throw new DomainError("El período contable está cerrado o bloqueado.", "PERIOD_LOCKED");
+    throw new DomainError("El periodo contable esta cerrado o bloqueado.", "PERIOD_LOCKED");
   }
+}
 
-  return period;
+export function assertPeriodCanClose(status: AccountingPeriodStatus) {
+  if (status !== "OPEN") {
+    throw new DomainError("Solo los periodos abiertos se pueden cerrar.", "PERIOD_NOT_OPEN");
+  }
+}
+
+export function assertPeriodCanLock(status: AccountingPeriodStatus) {
+  if (status === "LOCKED") {
+    throw new DomainError("El periodo ya esta bloqueado.", "PERIOD_ALREADY_LOCKED");
+  }
+}
+
+export function assertPeriodCanReopen(status: AccountingPeriodStatus) {
+  if (status === "OPEN") {
+    throw new DomainError("El periodo ya esta abierto.", "PERIOD_ALREADY_OPEN");
+  }
+}
+
+export function getAccountingPeriodLabel(period: Pick<AccountingPeriod, "fiscalYear" | "periodNumber">) {
+  return `P${String(period.periodNumber).padStart(2, "0")} / ${period.fiscalYear}`;
 }

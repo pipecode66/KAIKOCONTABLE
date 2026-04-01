@@ -153,6 +153,58 @@ export async function runCoreSeed() {
     },
   });
 
+  const accountantUser = await prisma.user.upsert({
+    where: { email: "contabilidad@kaiko.local" },
+    update: {
+      name: "Equipo Contable",
+      isActive: true,
+    },
+    create: {
+      name: "Equipo Contable",
+      email: "contabilidad@kaiko.local",
+      credential: {
+        create: {
+          passwordHash,
+        },
+      },
+    },
+  });
+
+  await prisma.userCredential.upsert({
+    where: { userId: accountantUser.id },
+    update: { passwordHash },
+    create: {
+      userId: accountantUser.id,
+      passwordHash,
+    },
+  });
+
+  const viewerUser = await prisma.user.upsert({
+    where: { email: "viewer@kaiko.local" },
+    update: {
+      name: "Usuario Viewer",
+      isActive: true,
+    },
+    create: {
+      name: "Usuario Viewer",
+      email: "viewer@kaiko.local",
+      credential: {
+        create: {
+          passwordHash,
+        },
+      },
+    },
+  });
+
+  await prisma.userCredential.upsert({
+    where: { userId: viewerUser.id },
+    update: { passwordHash },
+    create: {
+      userId: viewerUser.id,
+      passwordHash,
+    },
+  });
+
   const organization = await prisma.organization.upsert({
     where: { slug: "kaiko-demo" },
     update: {
@@ -202,10 +254,116 @@ export async function runCoreSeed() {
     });
   }
 
+  const accountantRole = roles.find((role) => role.key === "accountant");
+  const viewerRole = roles.find((role) => role.key === "viewer");
+
+  if (accountantRole) {
+    await prisma.membership.upsert({
+      where: {
+        organizationId_userId: {
+          organizationId: organization.id,
+          userId: accountantUser.id,
+        },
+      },
+      update: {
+        roleId: accountantRole.id,
+      },
+      create: {
+        organizationId: organization.id,
+        userId: accountantUser.id,
+        roleId: accountantRole.id,
+      },
+    });
+  }
+
+  if (viewerRole) {
+    await prisma.membership.upsert({
+      where: {
+        organizationId_userId: {
+          organizationId: organization.id,
+          userId: viewerUser.id,
+        },
+      },
+      update: {
+        roleId: viewerRole.id,
+      },
+      create: {
+        organizationId: organization.id,
+        userId: viewerUser.id,
+        roleId: viewerRole.id,
+      },
+    });
+  }
+
+  const secondOrganization = await prisma.organization.upsert({
+    where: { slug: "kaiko-labs" },
+    update: {
+      name: "KAIKO Labs",
+      baseCurrencyId: cop.id,
+    },
+    create: {
+      name: "KAIKO Labs",
+      slug: "kaiko-labs",
+      legalName: "KAIKO Labs SAS",
+      taxId: "901987654-1",
+      baseCurrencyId: cop.id,
+      createdById: adminUser.id,
+      settings: {
+        create: {
+          timezone: "America/Bogota",
+          locale: "es-CO",
+          fiscalYearStartMonth: 1,
+          numberFormat: "es-CO-currency",
+          dateFormat: "dd/MM/yyyy",
+        },
+      },
+    },
+  });
+
+  if (adminRole) {
+    await prisma.membership.upsert({
+      where: {
+        organizationId_userId: {
+          organizationId: secondOrganization.id,
+          userId: adminUser.id,
+        },
+      },
+      update: {
+        roleId: adminRole.id,
+      },
+      create: {
+        organizationId: secondOrganization.id,
+        userId: adminUser.id,
+        roleId: adminRole.id,
+      },
+    });
+  }
+
+  if (accountantRole) {
+    await prisma.membership.upsert({
+      where: {
+        organizationId_userId: {
+          organizationId: secondOrganization.id,
+          userId: accountantUser.id,
+        },
+      },
+      update: {
+        roleId: accountantRole.id,
+      },
+      create: {
+        organizationId: secondOrganization.id,
+        userId: accountantUser.id,
+        roleId: accountantRole.id,
+      },
+    });
+  }
+
   const baseAccounts = [
     ["1105", "Caja general", "ASSET", "DEBIT"],
     ["1110", "Bancos", "ASSET", "DEBIT"],
     ["1305", "Clientes nacionales", "ASSET", "DEBIT"],
+    ["1355", "IVA descontable", "ASSET", "DEBIT"],
+    ["1365", "Retenciones por cobrar", "ASSET", "DEBIT"],
     ["2205", "Proveedores nacionales", "LIABILITY", "CREDIT"],
     ["2408", "IVA por pagar", "LIABILITY", "CREDIT"],
     ["2365", "Retención en la fuente", "LIABILITY", "CREDIT"],
@@ -215,25 +373,27 @@ export async function runCoreSeed() {
     ["5905", "Ganancias y pérdidas", "EQUITY", "CREDIT"],
   ] as const;
 
-  for (const [code, name, type, normalBalance] of baseAccounts) {
-    await prisma.ledgerAccount.upsert({
-      where: {
-        organizationId_code: {
-          organizationId: organization.id,
-          code,
+  for (const targetOrganization of [organization, secondOrganization]) {
+    for (const [code, name, type, normalBalance] of baseAccounts) {
+      await prisma.ledgerAccount.upsert({
+        where: {
+          organizationId_code: {
+            organizationId: targetOrganization.id,
+            code,
+          },
         },
-      },
-      update: {
-        name,
-      },
-      create: {
-        organizationId: organization.id,
-        code,
-        name,
-        type,
-        normalBalance,
-      },
-    });
+        update: {
+          name,
+        },
+        create: {
+          organizationId: targetOrganization.id,
+          code,
+          name,
+          type,
+          normalBalance,
+        },
+      });
+    }
   }
 
   const taxes = [
@@ -321,53 +481,58 @@ export async function runCoreSeed() {
     ["PURCHASES", "purchase_bill", "FC", new Date().getFullYear()],
     ["TREASURY", "payment", "RC", new Date().getFullYear()],
     ["TREASURY", "transfer", "TR", new Date().getFullYear()],
+    ["ACCOUNTING", "accounting_voucher", "AV", new Date().getFullYear()],
     ["ACCOUNTING", "journal_entry", "JE", new Date().getFullYear()],
   ] as const;
 
-  for (const [module, documentType, prefix, fiscalYear] of sequences) {
-    await prisma.documentSequence.upsert({
-      where: {
-        organizationId_documentType_prefix_fiscalYear: {
-          organizationId: organization.id,
+  for (const targetOrganization of [organization, secondOrganization]) {
+    for (const [module, documentType, prefix, fiscalYear] of sequences) {
+      await prisma.documentSequence.upsert({
+        where: {
+          organizationId_documentType_prefix_fiscalYear: {
+            organizationId: targetOrganization.id,
+            documentType,
+            prefix,
+            fiscalYear,
+          },
+        },
+        update: {},
+        create: {
+          organizationId: targetOrganization.id,
+          module,
           documentType,
           prefix,
           fiscalYear,
         },
-      },
-      update: {},
-      create: {
-        organizationId: organization.id,
-        module,
-        documentType,
-        prefix,
-        fiscalYear,
-      },
-    });
+      });
+    }
   }
 
-  for (let month = 1; month <= 12; month += 1) {
-    const start = new Date(Date.UTC(new Date().getFullYear(), month - 1, 1));
-    const end = new Date(Date.UTC(new Date().getFullYear(), month, 0));
+  for (const targetOrganization of [organization, secondOrganization]) {
+    for (let month = 1; month <= 12; month += 1) {
+      const start = new Date(Date.UTC(new Date().getFullYear(), month - 1, 1, 0, 0, 0, 0));
+      const end = new Date(Date.UTC(new Date().getFullYear(), month, 0, 23, 59, 59, 999));
 
-    await prisma.accountingPeriod.upsert({
-      where: {
-        organizationId_fiscalYear_periodNumber: {
-          organizationId: organization.id,
+      await prisma.accountingPeriod.upsert({
+        where: {
+          organizationId_fiscalYear_periodNumber: {
+            organizationId: targetOrganization.id,
+            fiscalYear: start.getUTCFullYear(),
+            periodNumber: month,
+          },
+        },
+        update: {
+          periodStart: start,
+          periodEnd: end,
+        },
+        create: {
+          organizationId: targetOrganization.id,
           fiscalYear: start.getUTCFullYear(),
           periodNumber: month,
+          periodStart: start,
+          periodEnd: end,
         },
-      },
-      update: {
-        periodStart: start,
-        periodEnd: end,
-      },
-      create: {
-        organizationId: organization.id,
-        fiscalYear: start.getUTCFullYear(),
-        periodNumber: month,
-        periodStart: start,
-        periodEnd: end,
-      },
-    });
+      });
+    }
   }
 }
