@@ -13,13 +13,11 @@ async function handleRequest(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [processedJobs, dispatchedMessages] = await Promise.all([
-    processPendingJobs(),
-    dispatchPendingOutbox(),
-  ]);
+  const dispatchedMessages = await dispatchPendingOutbox();
+  const processedJobs = await processPendingJobs();
 
   return NextResponse.json({
-    processedJobs: processedJobs.length,
+    processedJobs,
     dispatchedMessages,
   });
 }

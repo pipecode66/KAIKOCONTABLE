@@ -18,6 +18,23 @@ export async function runMaintenanceCleanup() {
     },
   });
 
+  const purgedPasswordResetTokens = await prisma.passwordResetToken.deleteMany({
+    where: {
+      OR: [
+        {
+          consumedAt: {
+            lt: subDays(now, maintenancePolicies.passwordResetTokenPurgeDays),
+          },
+        },
+        {
+          expiresAt: {
+            lt: subDays(now, maintenancePolicies.passwordResetTokenPurgeDays),
+          },
+        },
+      ],
+    },
+  });
+
   const purgedSessions = await prisma.session.deleteMany({
     where: {
       OR: [
@@ -35,6 +52,18 @@ export async function runMaintenanceCleanup() {
     },
   });
 
+  const expiredIdempotency = await prisma.idempotencyRecord.updateMany({
+    where: {
+      status: "IN_PROGRESS",
+      expiresAt: {
+        lt: now,
+      },
+    },
+    data: {
+      status: "EXPIRED",
+    },
+  });
+
   const archivedIdempotency = await prisma.idempotencyRecord.updateMany({
     where: {
       status: {
@@ -48,6 +77,47 @@ export async function runMaintenanceCleanup() {
     data: {
       status: "ARCHIVED",
       archivedAt: now,
+    },
+  });
+
+  const purgedIdempotency = await prisma.idempotencyRecord.deleteMany({
+    where: {
+      status: "ARCHIVED",
+      archivedAt: {
+        lt: subDays(now, maintenancePolicies.idempotencyPurgeDays),
+      },
+    },
+  });
+
+  const archivedAsyncJobs = await prisma.asyncJob.updateMany({
+    where: {
+      status: {
+        in: ["SUCCEEDED", "FAILED", "DEAD_LETTER", "CANCELLED"],
+      },
+      archivedAt: null,
+      terminalAt: {
+        lt: subDays(now, maintenancePolicies.asyncJobRetentionDays),
+      },
+    },
+    data: {
+      status: "ARCHIVED",
+      archivedAt: now,
+      lockedAt: null,
+    },
+  });
+
+  const archivedOutboxMessages = await prisma.outboxMessage.updateMany({
+    where: {
+      status: {
+        in: ["DISPATCHED", "DEAD_LETTER"],
+      },
+      createdAt: {
+        lt: subDays(now, maintenancePolicies.asyncJobRetentionDays),
+      },
+    },
+    data: {
+      status: "ARCHIVED",
+      lockedAt: null,
     },
   });
 
@@ -79,8 +149,13 @@ export async function runMaintenanceCleanup() {
 
   return {
     expiredPasswordResetTokens: expiredPasswordResetTokens.count,
+    purgedPasswordResetTokens: purgedPasswordResetTokens.count,
     purgedSessions: purgedSessions.count,
+    expiredIdempotency: expiredIdempotency.count,
     archivedIdempotency: archivedIdempotency.count,
+    purgedIdempotency: purgedIdempotency.count,
+    archivedAsyncJobs: archivedAsyncJobs.count,
+    archivedOutboxMessages: archivedOutboxMessages.count,
     archivedAuditLogs: archivedAuditLogs.count,
     purgedTemporaryAttachments: purgedTemporaryAttachments.count,
   };

@@ -5,6 +5,7 @@ export type ParsedBankStatementRow = {
   description: string;
   amount: string;
   reference?: string;
+  balance?: string;
 };
 
 export function parseBankStatementCsv(content: string) {

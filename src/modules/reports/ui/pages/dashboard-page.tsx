@@ -5,10 +5,13 @@ import { KpiCard } from "@/components/layout/kpi-card";
 import { PageHeader } from "@/components/layout/page-header";
 import { StatusPill } from "@/components/layout/status-pill";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getDashboardOverview } from "@/modules/reports/application/queries/get-dashboard-overview";
 
-export async function DashboardPage() {
-  const overview = await getDashboardOverview();
+type DashboardPageProps = {
+  overview: Awaited<ReturnType<typeof import("@/modules/reports/application/queries/get-dashboard-overview").getDashboardOverview>>;
+  formatMoney: (value: string) => string;
+};
+
+export async function DashboardPage({ overview, formatMoney }: DashboardPageProps) {
   const metricIcons = [Wallet, CreditCard, Activity, Landmark, Building2, ShieldCheck];
 
   return (
@@ -16,8 +19,8 @@ export async function DashboardPage() {
       <PageHeader
         eyebrow="Control tower"
         title="Dashboard ejecutivo KAIKO"
-        description="Una lectura inmediata de ingresos, liquidez, cartera, obligaciones y focos operativos. Este shell deja el producto listo para ir enchufando modulos reales sin rehacer la experiencia."
-        badge="Sprint 1"
+        description="Lectura inmediata de ingresos, liquidez, cartera, obligaciones y focos operativos con datos reales del workspace."
+        badge="Live"
       />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -25,7 +28,7 @@ export async function DashboardPage() {
           <KpiCard
             key={metric.title}
             title={metric.title}
-            value={metric.value}
+            value={formatMoney(metric.value)}
             caption={metric.caption}
             trendLabel={metric.trendLabel}
             trend={metric.trend}
@@ -73,13 +76,13 @@ export async function DashboardPage() {
       <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <BaseDataTable
           title="Actividad reciente"
-          description="Mock temporal premium mientras conectamos documentos reales por modulo."
+          description="Documentos y movimientos reales mas recientes dentro del workspace."
           rows={overview.recentMovements}
           columns={[
             { key: "document", title: "Documento" },
             { key: "module", title: "Modulo" },
             { key: "counterparty", title: "Detalle" },
-            { key: "amount", title: "Monto" },
+            { key: "amount", title: "Monto", render: (row) => formatMoney(row.amount) },
             {
               key: "status",
               title: "Estado",

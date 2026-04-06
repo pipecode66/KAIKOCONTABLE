@@ -21,7 +21,16 @@ export async function enqueueJob(input: EnqueueJobInput) {
       dedupeKey: input.dedupeKey,
     },
     update: {
+      type: input.type,
+      payload: input.payload as Prisma.InputJsonValue,
+      status: "PENDING",
       availableAt: new Date(Date.now() + computeBackoffDelay(0)),
+      lockedAt: null,
+      terminalAt: null,
+      archivedAt: null,
+      lastError: null,
+      correlationId: input.correlationId ?? null,
+      organizationId: input.organizationId ?? null,
     },
     create: {
       type: input.type,

@@ -312,6 +312,120 @@ export async function runDemoSeed() {
     },
   });
 
+  await prisma.transfer.upsert({
+    where: {
+      id: `${organization.id}-transfer-demo-1`,
+    },
+    update: {},
+    create: {
+      id: `${organization.id}-transfer-demo-1`,
+      organizationId: organization.id,
+      currencyId: organization.baseCurrencyId,
+      sourceBankAccountId: bankAccount.id,
+      destinationCashAccountId: null,
+      transferDate: new Date("2026-03-22T00:00:00.000Z"),
+      reference: "TR-000010",
+      status: "DRAFT",
+      amount: "4500000.00",
+      notes: "Traslado preparado para caja operativa",
+    },
+  });
+
+  await prisma.bankStatementImport.upsert({
+    where: {
+      id: `${organization.id}-statement-import-demo-1`,
+    },
+    update: {},
+    create: {
+      id: `${organization.id}-statement-import-demo-1`,
+      organizationId: organization.id,
+      bankAccountId: bankAccount.id,
+      fileName: "extracto-marzo-demo.csv",
+      status: "COMPLETED",
+      rowsCount: 2,
+      importedAt: new Date("2026-03-31T12:00:00.000Z"),
+      lines: {
+        create: [
+          {
+            organizationId: organization.id,
+            bankAccountId: bankAccount.id,
+            transactionDate: new Date("2026-03-20T00:00:00.000Z"),
+            description: "Recaudo cliente Tecnologia Atlas",
+            reference: "RC-0005",
+            amount: "10000000.00",
+            balance: "31200000.00",
+          },
+          {
+            organizationId: organization.id,
+            bankAccountId: bankAccount.id,
+            transactionDate: new Date("2026-03-27T00:00:00.000Z"),
+            description: "Cobro comision bancaria",
+            reference: "BANK-FEE",
+            amount: "-120000.00",
+            balance: "31080000.00",
+          },
+        ],
+      },
+    },
+  });
+
+  await prisma.reconciliation.upsert({
+    where: {
+      id: `${organization.id}-reconciliation-demo-1`,
+    },
+    update: {},
+    create: {
+      id: `${organization.id}-reconciliation-demo-1`,
+      organizationId: organization.id,
+      bankAccountId: bankAccount.id,
+      periodStart: new Date("2026-03-01T00:00:00.000Z"),
+      periodEnd: new Date("2026-03-31T23:59:59.999Z"),
+      statementBalance: "31080000.00",
+      bookBalance: "31200000.00",
+      status: "IN_PROGRESS",
+      notes: "Pendiente por comision bancaria y validacion de corte",
+    },
+  });
+
+  await prisma.asyncJob.upsert({
+    where: {
+      id: `${organization.id}-report-export-demo-1`,
+    },
+    update: {},
+    create: {
+      id: `${organization.id}-report-export-demo-1`,
+      organizationId: organization.id,
+      type: "reports.export",
+      status: "SUCCEEDED",
+      terminalAt: new Date("2026-03-31T18:00:00.000Z"),
+      payload: {
+        reportKey: "balance-sheet",
+        asOf: "2026-03-31",
+        fileName: "kaiko-balance-sheet-2026-03-31.csv",
+        csvContent: "Seccion,Codigo,Cuenta,Saldo\nActivos,1110,Bancos,31200000.00",
+        mimeType: "text/csv",
+      },
+    },
+  });
+
+  await prisma.asyncJob.upsert({
+    where: {
+      id: `${organization.id}-report-export-demo-2`,
+    },
+    update: {},
+    create: {
+      id: `${organization.id}-report-export-demo-2`,
+      organizationId: organization.id,
+      type: "reports.export",
+      status: "PENDING",
+      payload: {
+        reportKey: "cash-flow",
+        from: "2026-03-01",
+        to: "2026-03-31",
+      },
+    },
+  });
+
   const marchPeriod = await prisma.accountingPeriod.findFirstOrThrow({
     where: {
       organizationId: organization.id,

@@ -9,7 +9,15 @@ type StatusPillProps = {
     | "closed"
     | "locked"
     | "pending"
+    | "processing"
+    | "completed"
     | "failed"
+    | "running"
+    | "retrying"
+    | "succeeded"
+    | "cancelled"
+    | "dead_letter"
+    | "dispatched"
     | "active"
     | "inactive"
     | "archived";
@@ -23,7 +31,15 @@ const styles: Record<StatusPillProps["status"], string> = {
   closed: "border-slate-200 bg-slate-100 text-slate-700",
   locked: "border-violet-200 bg-violet-50 text-violet-700",
   pending: "border-amber-200 bg-amber-50 text-amber-700",
+  processing: "border-sky-200 bg-sky-50 text-sky-700",
+  completed: "border-emerald-200 bg-emerald-50 text-emerald-700",
   failed: "border-rose-200 bg-rose-50 text-rose-700",
+  running: "border-sky-200 bg-sky-50 text-sky-700",
+  retrying: "border-amber-200 bg-amber-50 text-amber-700",
+  succeeded: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  cancelled: "border-slate-200 bg-slate-100 text-slate-700",
+  dead_letter: "border-rose-200 bg-rose-50 text-rose-700",
+  dispatched: "border-emerald-200 bg-emerald-50 text-emerald-700",
   active: "border-emerald-200 bg-emerald-50 text-emerald-700",
   inactive: "border-slate-200 bg-slate-100 text-slate-700",
   archived: "border-slate-200 bg-slate-100 text-slate-700",

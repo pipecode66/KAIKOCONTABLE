@@ -1,107 +1,226 @@
-import { ArrowLeftRight, Landmark, ShieldEllipsis, Wallet } from "lucide-react";
+import { Landmark, ReceiptText, ScanSearch, Wallet } from "lucide-react";
 
-import { ModuleOverviewPage } from "@/components/layout/module-overview-page";
+import { BaseDataTable } from "@/components/data-table/base-data-table";
+import { EmptyState } from "@/components/feedback/empty-state";
+import { KpiCard } from "@/components/layout/kpi-card";
+import { PageHeader } from "@/components/layout/page-header";
+import { StatusPill } from "@/components/layout/status-pill";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { TreasuryOverviewDto } from "@/modules/treasury/dto/treasury.dto";
+import { TreasurySubnav } from "@/modules/treasury/ui/components/treasury-subnav";
 
-export function TreasuryOverviewPage() {
+type TreasuryOverviewPageProps = {
+  overview: TreasuryOverviewDto;
+  formatMoney: (value: string) => string;
+  formatDate: (value: string) => string;
+};
+
+export function TreasuryOverviewPage({
+  overview,
+  formatMoney,
+  formatDate,
+}: TreasuryOverviewPageProps) {
   return (
-    <ModuleOverviewPage
-      eyebrow="Tesoreria"
-      title="Caja, bancos y conciliacion"
-      description="Tesoreria arranca con una presencia visual fuerte para saldos, importacion de extractos y conciliacion asistida, manteniendo el tono corporativo de KAIKO."
-      badge="Jobs + outbox ready"
-      metrics={[
-        {
-          title: "Saldo bancos",
-          value: "COP 31.2M",
-          caption: "Lectura inmediata del frente bancario con espacio para multicuenta.",
-          trendLabel: "4 cuentas",
-          trend: "up",
-          tone: "emerald",
-          icon: Landmark,
-        },
-        {
-          title: "Caja",
-          value: "COP 2.8M",
-          caption: "Bloque listo para arqueo, movimientos manuales y cash posture.",
-          trendLabel: "Operativa",
-          trend: "flat",
-          icon: Wallet,
-        },
-        {
-          title: "Conciliaciones",
-          value: "2 pendientes",
-          caption: "La interfaz ya reserva estados claros para matching manual asistido.",
-          trendLabel: "Atencion",
-          trend: "down",
-          tone: "ink",
-          icon: ArrowLeftRight,
-        },
-        {
-          title: "Procesos async",
-          value: "CSV / exports",
-          caption: "Importaciones grandes y tareas de soporte ya tienen destino fuera del request.",
-          trendLabel: "Background",
-          trend: "up",
-          tone: "ivory",
-          icon: ShieldEllipsis,
-        },
-      ]}
-      lanes={[
-        {
-          title: "Operacion de tesoreria",
-          description:
-            "La vista principal prioriza control de saldos, conciliaciones y movimientos intercuenta con superficies claras y muy legibles.",
-        },
-        {
-          title: "Motor operativo resiliente",
-          description:
-            "Jobs, outbox y maintenance ya tienen un lugar claro en la experiencia para que la operacion no dependa del request/response.",
-          tone: "dark",
-        },
-      ]}
-      checklist={[
-        {
-          title: "Movimientos manuales",
-          description: "La UI ya contempla una tabla operativa con filtros, estados y acciones contextuales.",
-          status: "active",
-        },
-        {
-          title: "Importacion CSV",
-          description: "El shell deja claro que el procesamiento pesado correra en background.",
-          status: "pending",
-        },
-        {
-          title: "Conciliacion bancaria",
-          description: "Existe una superficie lista para matching, confirmacion y saldo conciliado.",
-          status: "open",
-        },
-      ]}
-      table={{
-        title: "Focos del modulo",
-        description: "Los siguientes bloques funcionales ya tienen un espacio visual coherente y reutilizable.",
-        rows: [
-          {
-            stream: "Bank accounts",
-            focus: "Saldos, movimientos y conciliacion por cuenta",
-            readiness: "Shell listo",
-          },
-          {
-            stream: "Cash accounts",
-            focus: "Arqueo y seguimiento operativo de caja",
-            readiness: "Diseño listo",
-          },
-          {
-            stream: "Statement imports",
-            focus: "Procesamiento CSV, sugerencias y reintentos",
-            readiness: "Infra lista",
-          },
-        ],
-      }}
-      emptyState={{
-        title: "Tesoreria lista para conectarse",
-        description:
-          "La capa visual ya esta alineada con conciliacion, procesos async y control operativo diario.",
-      }}
-    />
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Tesoreria"
+        title="Bancos, caja y conciliacion operativa"
+        description="Control real de liquidez: pagos, traslados, extractos importados, conciliacion asistida y estado de caja conectados al backend contable."
+        badge={overview.organizationName}
+        actions={<TreasurySubnav organizationSlug={overview.organizationSlug} activeKey="overview" />}
+      />
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <KpiCard
+          title="Bancos disponibles"
+          value={formatMoney(overview.metrics.availableBanks)}
+          caption="Saldo operativo agregado en cuentas bancarias."
+          tone="emerald"
+          icon={Landmark}
+        />
+        <KpiCard
+          title="Caja disponible"
+          value={formatMoney(overview.metrics.availableCash)}
+          caption="Liquidez registrada en cajas activas."
+          tone="ivory"
+          icon={Wallet}
+        />
+        <KpiCard
+          title="Extractos pendientes"
+          value={String(overview.metrics.pendingImports)}
+          caption="CSV cargados aun en proceso o con fallo."
+          tone="ink"
+          icon={ReceiptText}
+        />
+        <KpiCard
+          title="Conciliaciones abiertas"
+          value={String(overview.metrics.openReconciliations)}
+          caption="Ventanas bancarias que aun requieren confirmacion."
+          tone="ivory"
+          icon={ScanSearch}
+        />
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <Card className="rounded-[30px] border-white/10 bg-[linear-gradient(180deg,#0c1713_0%,#10231d_100%)] text-white shadow-[0_30px_80px_rgba(6,23,17,0.3)]">
+          <CardHeader>
+            <CardTitle className="font-heading text-xl text-white">Lectura de liquidez</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2">
+            {overview.bankBalances.map((balance) => (
+              <div key={balance.id} className="rounded-[24px] border border-white/10 bg-white/6 p-5">
+                <p className="font-medium text-white">
+                  {balance.code} · {balance.name}
+                </p>
+                <p className="mt-3 font-heading text-2xl">{formatMoney(balance.balance)}</p>
+                <p className="mt-2 text-sm text-white/70">Disponible para pagos, recaudos y conciliacion.</p>
+              </div>
+            ))}
+            {overview.bankBalances.length === 0 ? (
+              <div className="rounded-[24px] border border-dashed border-white/10 bg-white/6 p-5 text-sm text-white/72">
+                No hay cuentas bancarias activas para mostrar.
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-[30px] border-emerald-950/5 bg-white/94 shadow-[0_18px_42px_rgba(15,23,42,0.06)]">
+          <CardHeader>
+            <CardTitle className="font-heading text-xl">Estado de caja</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {overview.cashBalances.map((balance) => (
+              <div key={balance.id} className="rounded-[24px] border border-slate-100 bg-slate-50/75 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-medium text-slate-900">
+                      {balance.code} · {balance.name}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-600">Caja activa para movimientos internos y arqueo.</p>
+                  </div>
+                  <p className="font-heading text-lg text-slate-950">{formatMoney(balance.balance)}</p>
+                </div>
+              </div>
+            ))}
+            {overview.cashBalances.length === 0 ? (
+              <EmptyState
+                title="Sin cajas activas"
+                description="Activa una caja o registra movimientos para empezar a controlar efectivo."
+              />
+            ) : null}
+          </CardContent>
+        </Card>
+      </section>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <BaseDataTable
+          title="Pagos recientes"
+          description="Cobros y desembolsos mas recientes publicados o en borrador."
+          rows={overview.recentPayments}
+          columns={[
+            {
+              key: "reference",
+              title: "Pago",
+              render: (row) => (
+                <div>
+                  <p className="font-medium text-slate-950">{row.reference ?? "Sin referencia"}</p>
+                  <p className="text-xs text-slate-500">{row.partyName ?? "Sin tercero"}</p>
+                </div>
+              ),
+            },
+            {
+              key: "amount",
+              title: "Monto",
+              render: (row) => formatMoney(row.amount),
+            },
+            {
+              key: "status",
+              title: "Estado",
+              render: (row) => <StatusPill status={row.status.toLowerCase() as "draft" | "posted" | "voided"} />,
+            },
+          ]}
+          emptyState={<EmptyState title="Sin pagos" description="Los pagos apareceran cuando registres cobros o salidas de tesoreria." />}
+        />
+
+        <BaseDataTable
+          title="Traslados recientes"
+          description="Movimientos internos entre bancos y caja."
+          rows={overview.recentTransfers}
+          columns={[
+            {
+              key: "reference",
+              title: "Traslado",
+              render: (row) => (
+                <div>
+                  <p className="font-medium text-slate-950">{row.reference ?? "Sin referencia"}</p>
+                  <p className="text-xs text-slate-500">
+                    {row.sourceLabel} → {row.destinationLabel}
+                  </p>
+                </div>
+              ),
+            },
+            {
+              key: "amount",
+              title: "Monto",
+              render: (row) => formatMoney(row.amount),
+            },
+            {
+              key: "status",
+              title: "Estado",
+              render: (row) => <StatusPill status={row.status.toLowerCase() as "draft" | "posted" | "voided"} />,
+            },
+          ]}
+          emptyState={<EmptyState title="Sin traslados" description="Usa traslados para mover liquidez entre cuentas internas." />}
+        />
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <BaseDataTable
+          title="Extractos importados"
+          description="Ultimos archivos CSV procesados para conciliacion bancaria."
+          rows={overview.recentImports}
+          columns={[
+            { key: "fileName", title: "Archivo" },
+            { key: "bankAccountName", title: "Cuenta" },
+            {
+              key: "status",
+              title: "Estado",
+              render: (row) => <StatusPill status={row.status.toLowerCase() as "pending" | "failed" | "posted"} />,
+            },
+            {
+              key: "importedAtIso",
+              title: "Importado",
+              render: (row) => (row.importedAtIso ? formatDate(row.importedAtIso) : "Pendiente"),
+            },
+          ]}
+          emptyState={<EmptyState title="Sin extractos" description="Carga un CSV bancario para empezar la conciliacion asistida." />}
+        />
+
+        <BaseDataTable
+          title="Conciliaciones recientes"
+          description="Ventanas de conciliacion con sugerencias listas para confirmar."
+          rows={overview.recentReconciliations}
+          columns={[
+            { key: "bankAccountName", title: "Cuenta" },
+            {
+              key: "periodEndIso",
+              title: "Corte",
+              render: (row) => formatDate(row.periodEndIso),
+            },
+            {
+              key: "lineCount",
+              title: "Cruces",
+              render: (row) => `${row.lineCount} aplicados`,
+            },
+            {
+              key: "status",
+              title: "Estado",
+              render: (row) => <StatusPill status={row.status.toLowerCase() as "draft" | "posted" | "closed"} />,
+            },
+          ]}
+          emptyState={<EmptyState title="Sin conciliaciones" description="Crea la primera conciliacion para ver sugerencias de match." />}
+        />
+      </div>
+    </div>
   );
 }
